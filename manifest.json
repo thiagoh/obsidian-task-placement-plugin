@@ -1,0 +1,11 @@
+{
+	"id": "task-placement-plugin",
+	"name": "Task placement Plugin",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "This is an Obsidian plugin that moves tasks to the bottom/top of the editor based on their completion status",
+	"author": "thiagoh@gmail.com",
+	"authorUrl": "https://github.com/thiagoh",
+	"fundingUrl": "https://github.com/thiagoh",
+	"isDesktopOnly": false
+}
