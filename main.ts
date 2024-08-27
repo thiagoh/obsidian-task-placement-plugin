@@ -1,21 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Editor, MarkdownView, Plugin } from 'obsidian';
-import {
-	getChangeInfo,
-	getLastIncompleteTask,
-	getEntry,
-	IEditor,
-	isCheckboxChecked,
-	isCheckboxUnchecked,
-	isNestedCheckbox,
-	isNewLineCheckboxUnchecked,
-  adjustTasksPositions,
-} from 'utils';
+import { getChangeInfo, getEntry, adjustTasksPositions, debug } from 'utils';
 
 export default class MoveCheckedLinesToBottomPlugin extends Plugin {
 	async onload() {
 		this.app.workspace.on('editor-change', (editor: Editor, info: MarkdownView) => {
-			console.debug('Event: editor-change');
+			debug('Event: editor-change');
 			this.moveCheckedLinesToBottom();
 		});
 
@@ -25,10 +15,10 @@ export default class MoveCheckedLinesToBottomPlugin extends Plugin {
 			name: 'Print cursor and line info',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				const cursor = editor.getCursor();
-				console.debug('task-placement-plugin: cursor', cursor);
+				debug('cursor', cursor);
 				const line = editor.getLine(cursor.line);
-				console.debug('task-placement-plugin: line', line);
-				console.debug('task-placement-plugin: editor', editor);
+				debug('line', line);
+				debug('editor', editor);
 			},
 		});
 	}
@@ -40,21 +30,21 @@ export default class MoveCheckedLinesToBottomPlugin extends Plugin {
 		const activeEditor = activeView?.editor;
 
 		if (activeEditor) {
-			console.debug('task-placement-plugin: value', activeEditor.getValue());
+			debug('value', activeEditor.getValue());
 			const { change, firstLineChanged } = getChangeInfo(activeEditor);
 			if (!change) {
-				console.debug('task-placement-plugin: No need to change. Returning...');
+				debug('No need to change. Returning...');
 				return;
 			}
-			console.debug('task-placement-plugin: Need to change');
+			debug('Need to change');
 
-      const content = adjustTasksPositions(activeEditor);
-			console.debug('task-placement-plugin: content', content);
+			const content = adjustTasksPositions(activeEditor);
+			debug('content', content);
 			activeEditor.setValue(content);
 			// activeEditor.setValue(buffer + '\n----' + bottomBuffer);
 			const { text: line } = getEntry(activeEditor, Math.max(firstLineChanged, 0));
 			activeEditor.setCursor({ line: Math.max(firstLineChanged, 0), ch: line.length });
-			console.debug('task-placement-plugin: cursor placed to ', line.length);
+			debug('cursor placed to ', line.length);
 		}
 	}
 }

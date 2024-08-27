@@ -1,5 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
+export const DEBUG_ENABLED = false;
+
+export function debug(...args: any[]) {
+	if (DEBUG_ENABLED) {
+		console.log(['task-placement-plugin:', ...args]);
+	}
+}
+
 export interface IEditor {
 	getLine(line: number): string;
 	lineCount(): number;
@@ -11,7 +19,7 @@ export function getChangeInfo(editor: IEditor) {
 	let firstLineChanged = -1;
 
 	let i = 0;
-	while (i < editor.lineCount()) {
+	while (i < editor.lineCount() && !change) {
 		const { text, nextLine } = getEntry(editor, i);
 		if (!firstCheckboxFound && isCheckboxChecked(text)) {
 			firstCheckboxFound = true;
@@ -28,12 +36,18 @@ export function getChangeInfo(editor: IEditor) {
 	};
 }
 
-export function getEntry(editor: IEditor, initialI: number) {
+export function getEntry(editor: IEditor, initialI: number): { text: string; nextLine: number; previousLine: number } {
+	if (initialI < 0) {
+		return { text: '', nextLine: 0, previousLine: -1 };
+	}
 	let text, nextLine, previousLine;
 	{
 		let i = initialI;
 		const firstLine = editor.getLine(i);
-		if (!isCheckbox(firstLine)) {
+    if (isNestedCheckbox(firstLine)) {
+      return getEntry(editor, initialI - 1);
+    }
+		if (!isTaskEntry(firstLine)) {
 			return { text: firstLine, nextLine: i + 1, previousLine: i - 1 };
 		}
 		i++;
@@ -56,7 +70,7 @@ export function getEntry(editor: IEditor, initialI: number) {
 			const line = editor.getLine(i);
 			if (isNestedCheckbox(line)) {
 				i--;
-			} else if (isCheckbox(line)) {
+			} else {
 				break;
 			}
 		}
@@ -78,11 +92,11 @@ export function adjustTasksPositions(editor: IEditor) {
 			const { text: entry, nextLine, previousLine } = getEntry(editor, i);
 			if (isCheckboxChecked(entry)) {
 				completeTasksBuffer = append(completeTasksBuffer, entry);
-				console.debug('task-placement-plugin: checked entry', `'${entry}'`);
+				debug('checked entry', `'${entry}'`);
 				// } else if (isNewLineCheckboxUnchecked(entry)) {
 				// 	completeTasksBuffer = '\t' + entry + completeTasksBuffer;
 			} else if (isNewLineCheckboxUnchecked(entry)) {
-				console.debug('task-placement-plugin: newLineCheckboxUnchecked entry', `'${entry}'`);
+				debug('newLineCheckboxUnchecked entry', `'${entry}'`);
 				const { text: previousEntryText } = getEntry(editor, previousLine);
 				if (isCheckboxChecked(previousEntryText)) {
 					completeTasksBuffer = append(completeTasksBuffer, '  ' + entry);
@@ -90,14 +104,14 @@ export function adjustTasksPositions(editor: IEditor) {
 					incompleteTasksBuffer = append(incompleteTasksBuffer, entry);
 				}
 			} else {
-				console.debug('task-placement-plugin: else entry', entry);
+				debug('else entry', entry);
 				incompleteTasksBuffer = append(incompleteTasksBuffer, entry);
 			}
 			i = Math.max(i + 1, nextLine);
 		}
 	}
-	console.debug('task-placement-plugin: completeTasksBuffer', `'${completeTasksBuffer}'`);
-	console.debug('task-placement-plugin: incompleteTasksBuffer', `'${incompleteTasksBuffer}'`);
+	debug('completeTasksBuffer', `'${completeTasksBuffer}'`);
+	debug('incompleteTasksBuffer', `'${incompleteTasksBuffer}'`);
 	return incompleteTasksBuffer + (incompleteTasksBuffer.length > 0 && completeTasksBuffer.length > 0 ? '\n' : '') + completeTasksBuffer;
 }
 
@@ -106,7 +120,7 @@ export function getLastIncompleteTask(editor: IEditor) {
 		let i = editor.lineCount() - 1;
 		while (i > 0) {
 			const line = editor.getLine(i);
-			if (!isCheckbox(line)) {
+			if (!isTaskEntry(line)) {
 				i--;
 				continue;
 			}
@@ -123,7 +137,7 @@ export function getLastIncompleteTask(editor: IEditor) {
 	return divisorLineIx < 0 ? editor.lineCount() - 1 : divisorLineIx;
 }
 
-export function isCheckbox(line: string) {
+export function isTaskEntry(line: string) {
 	return isCheckboxChecked(line) || isCheckboxUnchecked(line);
 }
 

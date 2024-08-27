@@ -129,6 +129,91 @@ describe('getEntry', () => {
 		expect(nextLine).toBe(6);
 		expect(previousLine).toBe(0);
 	});
+
+  test('getEntry starts from non zero line position and is able to handle non checkbox lines', () => {
+		const content = `- [ ] a
+- [ ] e
+----
+- [ ] b
+- [ ] d
+- [ ] a`;
+		const editor = new TestEditor(content);
+
+		const { text, nextLine, previousLine } = getEntry(editor, 3);
+		expect(text).toBe(`- [ ] b`);
+		expect(nextLine).toBe(4);
+		expect(previousLine).toBe(2);
+	});
+
+  test('getEntry starts from a line thats not a task', () => {
+		const content = `- [ ] a
+- [ ] e
+----
+- [ ] b
+  - [ ] d
+    - [ ] e
+- [ ] a`;
+		const editor = new TestEditor(content);
+
+		const { text, nextLine, previousLine } = getEntry(editor, 2);
+		expect(text).toBe(`----`);
+		expect(nextLine).toBe(3);
+		expect(previousLine).toBe(1);
+	});
+
+  test('getEntry starts from a line with nesting', () => {
+		const content = `- [ ] a
+- [ ] e
+----
+- [ ] b
+  - [ ] d
+    - [ ] e
+- [ ] a`;
+		const editor = new TestEditor(content);
+
+		const { text, nextLine, previousLine } = getEntry(editor, 3);
+		expect(text).toBe(`- [ ] b
+  - [ ] d
+    - [ ] e`);
+		expect(nextLine).toBe(6);
+		expect(previousLine).toBe(2);
+	});
+
+  test('getEntry starts from a nested line', () => {
+		const content = `- [ ] a
+- [ ] e
+----
+- [ ] b
+  - [ ] d
+    - [ ] e
+- [ ] a`;
+		const editor = new TestEditor(content);
+
+		const { text, nextLine, previousLine } = getEntry(editor, 4);
+		expect(text).toBe(`- [ ] b
+  - [ ] d
+    - [ ] e`);
+		expect(nextLine).toBe(6);
+		expect(previousLine).toBe(2);
+	});
+
+  test('getEntry starts from a sub nested line', () => {
+		const content = `- [ ] a
+- [ ] e
+----
+- [ ] b
+  - [ ] d
+    - [ ] e
+- [ ] a`;
+		const editor = new TestEditor(content);
+
+		const { text, nextLine, previousLine } = getEntry(editor, 5);
+		expect(text).toBe(`- [ ] b
+  - [ ] d
+    - [ ] e`);
+		expect(nextLine).toBe(6);
+		expect(previousLine).toBe(2);
+	});
 });
 
 describe('getChangeInfo', () => {
