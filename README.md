@@ -19,3 +19,7 @@ Or test watch
 ```shell
 npm run test:watch
 ```
+
+## Screenshots
+
+![](https://github.com/user-attachments/assets/85a8abff-90d9-45ff-bea2-fd9064c452cc)
