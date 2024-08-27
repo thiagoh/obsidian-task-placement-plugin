@@ -1,5 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Editor, MarkdownView, Plugin } from 'obsidian';
+import {
+	getChangeInfo,
+	getLastIncompleteTask,
+	getEntry,
+	IEditor,
+	isCheckboxChecked,
+	isCheckboxUnchecked,
+	isNestedCheckbox,
+	isNewLineCheckboxUnchecked,
+  adjustTasksPositions,
+} from 'utils';
 
 export default class MoveCheckedLinesToBottomPlugin extends Plugin {
 	async onload() {
@@ -29,58 +40,20 @@ export default class MoveCheckedLinesToBottomPlugin extends Plugin {
 		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
 		const activeEditor = activeView?.editor;
 
-		function getDivisorLine(editor: Editor): number {
-			for (let i = editor.lineCount() - 1; i > 0; i--) {
-				const line = editor.getLine(i);
-				if (line === '----') {
-					// divisor line found
-					return i;
-				}
-			}
-			return -1;
-		}
-
 		if (activeEditor) {
-			const divisorLineIx = getDivisorLine(activeEditor);
-			const divisorLinePlacementIx = divisorLineIx < 0 ? activeEditor.lineCount() : divisorLineIx;
-			let change = false;
-			let firstLineChanged = -1;
-			for (let i = 0; i < activeEditor.lineCount(); i++) {
-				const line = activeEditor.getLine(i);
-				if (i < divisorLinePlacementIx && line.startsWith('- [x]')) {
-					change = true;
-					firstLineChanged = firstLineChanged < 0 ? i : firstLineChanged;
-				} else if (i > divisorLinePlacementIx && line.startsWith('- [ ]')) {
-					change = true;
-				}
-			}
-
+			console.debug('task-placement-plugin: value', activeEditor.getValue());
+			const { change, firstLineChanged } = getChangeInfo(activeEditor);
 			if (!change) {
-				console.debug('No need to change. Returning...');
+				console.debug('task-placement-plugin: No need to change. Returning...');
 				return;
 			}
-			console.debug('Need to change');
+			console.debug('task-placement-plugin: Need to change');
 
-			let bottomBuffer = '';
-			let buffer = '';
-			for (let i = 0; i < divisorLinePlacementIx; i++) {
-				const line = activeEditor.getLine(i);
-				if (line.startsWith('- [x]')) {
-					bottomBuffer = '\n' + line + bottomBuffer;
-				} else {
-					buffer += (buffer.length > 0 ? '\n' : '') + line;
-				}
-			}
-			for (let i = divisorLinePlacementIx + 1; i < activeEditor.lineCount(); i++) {
-				const line = activeEditor.getLine(i);
-				if (line.startsWith('- [ ]')) {
-					buffer = line + '\n' + buffer;
-				} else {
-					bottomBuffer += '\n' + line;
-				}
-			}
-			activeEditor.setValue(buffer + '\n----' + bottomBuffer);
-			const line = activeEditor.getLine(Math.max(firstLineChanged, 0));
+      const content = adjustTasksPositions(activeEditor);
+			console.debug('task-placement-plugin: content', content);
+			activeEditor.setValue(content);
+			// activeEditor.setValue(buffer + '\n----' + bottomBuffer);
+			const { text: line } = getEntry(activeEditor, Math.max(firstLineChanged, 0));
 			activeEditor.setCursor({ line: Math.max(firstLineChanged, 0), ch: line.length });
 			console.debug('cursor placed to ', line.length);
 		}
