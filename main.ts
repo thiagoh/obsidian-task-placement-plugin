@@ -25,11 +25,10 @@ export default class MoveCheckedLinesToBottomPlugin extends Plugin {
 			name: 'Print cursor and line info',
 			editorCallback: (editor: Editor, view: MarkdownView) => {
 				const cursor = editor.getCursor();
-				console.debug('cursor', cursor);
+				console.debug('task-placement-plugin: cursor', cursor);
 				const line = editor.getLine(cursor.line);
-				console.debug('line', line);
-				console.debug('editor', editor);
-				// this.moveCheckedLinesToBottom();
+				console.debug('task-placement-plugin: line', line);
+				console.debug('task-placement-plugin: editor', editor);
 			},
 		});
 	}
@@ -55,7 +54,7 @@ export default class MoveCheckedLinesToBottomPlugin extends Plugin {
 			// activeEditor.setValue(buffer + '\n----' + bottomBuffer);
 			const { text: line } = getEntry(activeEditor, Math.max(firstLineChanged, 0));
 			activeEditor.setCursor({ line: Math.max(firstLineChanged, 0), ch: line.length });
-			console.debug('cursor placed to ', line.length);
+			console.debug('task-placement-plugin: cursor placed to ', line.length);
 		}
 	}
 }
