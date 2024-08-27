@@ -21,10 +21,10 @@ export function getChangeInfo(editor: IEditor) {
 	let i = 0;
 	while (i < editor.lineCount() && !change) {
 		const { text, nextLine } = getEntry(editor, i);
-		if (!firstCheckboxFound && isCheckboxChecked(text)) {
+		if (!firstCheckboxFound && isRootTaskChecked(text)) {
 			firstCheckboxFound = true;
 			firstLineChanged = i;
-		} else if (firstCheckboxFound && isCheckboxUnchecked(text)) {
+		} else if (firstCheckboxFound && isRootTaskUnchecked(text)) {
 			change = true;
 		}
 		i = Math.max(i + 1, nextLine);
@@ -44,7 +44,7 @@ export function getEntry(editor: IEditor, initialI: number): { text: string; nex
 	{
 		let i = initialI;
 		const firstLine = editor.getLine(i);
-    if (isNestedCheckbox(firstLine)) {
+    if (isNestedTask(firstLine)) {
       return getEntry(editor, initialI - 1);
     }
 		if (!isTaskEntry(firstLine)) {
@@ -54,7 +54,7 @@ export function getEntry(editor: IEditor, initialI: number): { text: string; nex
 		text = firstLine;
 		while (i < editor.lineCount()) {
 			const line = editor.getLine(i);
-			if (isNestedCheckbox(line)) {
+			if (isNestedTask(line)) {
 				text += '\n' + line;
 				i++;
 			} else {
@@ -68,7 +68,7 @@ export function getEntry(editor: IEditor, initialI: number): { text: string; nex
 		let i = initialI - 1;
 		while (i > 0) {
 			const line = editor.getLine(i);
-			if (isNestedCheckbox(line)) {
+			if (isNestedTask(line)) {
 				i--;
 			} else {
 				break;
@@ -90,7 +90,7 @@ export function adjustTasksPositions(editor: IEditor) {
 		let i = 0;
 		while (i < editor.lineCount()) {
 			const { text: entry, nextLine, previousLine } = getEntry(editor, i);
-			if (isCheckboxChecked(entry)) {
+			if (isRootTaskChecked(entry)) {
 				completeTasksBuffer = append(completeTasksBuffer, entry);
 				debug('checked entry', `'${entry}'`);
 				// } else if (isNewLineCheckboxUnchecked(entry)) {
@@ -98,7 +98,7 @@ export function adjustTasksPositions(editor: IEditor) {
 			} else if (isNewLineCheckboxUnchecked(entry)) {
 				debug('newLineCheckboxUnchecked entry', `'${entry}'`);
 				const { text: previousEntryText } = getEntry(editor, previousLine);
-				if (isCheckboxChecked(previousEntryText)) {
+				if (isRootTaskChecked(previousEntryText)) {
 					completeTasksBuffer = append(completeTasksBuffer, '  ' + entry);
 				} else {
 					incompleteTasksBuffer = append(incompleteTasksBuffer, entry);
@@ -126,7 +126,7 @@ export function getLastIncompleteTask(editor: IEditor) {
 			}
 
 			const { text: entry, previousLine } = getEntry(editor, i);
-			if (isCheckboxUnchecked(entry)) {
+			if (isRootTaskUnchecked(entry)) {
 				return Math.max(i, 0);
 			}
 			i = Math.min(i - 1, previousLine);
@@ -138,18 +138,18 @@ export function getLastIncompleteTask(editor: IEditor) {
 }
 
 export function isTaskEntry(line: string) {
-	return isCheckboxChecked(line) || isCheckboxUnchecked(line);
+	return isRootTaskChecked(line) || isRootTaskUnchecked(line);
 }
 
-export function isCheckboxChecked(line: string) {
+export function isRootTaskChecked(line: string) {
 	return line.startsWith('- [x]');
 }
 
-export function isNestedCheckbox(line: string) {
+export function isNestedTask(line: string) {
 	return /^\s+- \[(x| )\].*/.test(line);
 }
 
-export function isCheckboxUnchecked(line: string) {
+export function isRootTaskUnchecked(line: string) {
 	return line.startsWith('- [ ]');
 }
 

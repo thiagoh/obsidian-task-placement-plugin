@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { adjustTasksPositions, getChangeInfo, getEntry, IEditor, isNestedCheckbox, isNewLineCheckboxUnchecked } from './utils';
+import { adjustTasksPositions, getChangeInfo, getEntry, IEditor, isNestedTask, isNewLineCheckboxUnchecked } from './utils';
 
 class TestEditor implements IEditor {
 	private lines: string[];
@@ -352,33 +352,33 @@ describe('getChangeInfo', () => {
 	});
 });
 
-describe('isNestedCheckbox', () => {
-	test('isNestedCheckbox should return false for root level checkbox without nesting', () => {
+describe('isNestedTask', () => {
+	test('isNestedTask should return false for root level checkbox without nesting', () => {
 		const content = `- [ ] e`;
-		expect(isNestedCheckbox(content)).toBe(false);
+		expect(isNestedTask(content)).toBe(false);
 	});
-	test('isNestedCheckbox should return false for root level checkbox with nesting', () => {
+	test('isNestedTask should return false for root level checkbox with nesting', () => {
 		const content = `- [ ] e
   - [ ] d`;
-		expect(isNestedCheckbox(content)).toBe(false);
+		expect(isNestedTask(content)).toBe(false);
 	});
-	test('isNestedCheckbox should return false for root level checkbox', () => {
+	test('isNestedTask should return false for root level checkbox', () => {
 		const content = `- [ ] e
   - [ ] d
     - [ ] a`;
-		expect(isNestedCheckbox(content)).toBe(false);
+		expect(isNestedTask(content)).toBe(false);
 	});
-	test('isNestedCheckbox should return true for nested checkbox', () => {
+	test('isNestedTask should return true for nested checkbox', () => {
 		const content = ` - [ ] e
     - [ ] d
       - [ ] a`;
-		expect(isNestedCheckbox(content)).toBe(true);
+		expect(isNestedTask(content)).toBe(true);
 	});
-	test('isNestedCheckbox should return true for subnested checkbox', () => {
+	test('isNestedTask should return true for subnested checkbox', () => {
 		const content = `   - [ ] e
       - [ ] d
         - [ ] a`;
-		expect(isNestedCheckbox(content)).toBe(true);
+		expect(isNestedTask(content)).toBe(true);
 	});
 });
 
