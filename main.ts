@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Editor, MarkdownView, Plugin } from 'obsidian';
-import { getChangeInfo, getEntry, adjustTasksPositions, debug } from 'utils';
+import { getChangeInfo, getEntry, adjustTasksPositions, debug, IEditor } from 'utils';
 
 export default class MoveCheckedLinesToBottomPlugin extends Plugin {
 	async onload() {
@@ -31,6 +31,13 @@ export default class MoveCheckedLinesToBottomPlugin extends Plugin {
 
 		if (activeEditor) {
 			debug('value', activeEditor.getValue());
+      activeEditor.getValue();
+
+      if (!this.isPluginEnabled(activeEditor)) {
+        debug('Plugin is not enabled. Returning...');
+        return;
+      }
+
 			const { change, firstLineChanged } = getChangeInfo(activeEditor);
 			if (!change) {
 				debug('No need to change. Returning...');
@@ -47,4 +54,18 @@ export default class MoveCheckedLinesToBottomPlugin extends Plugin {
 			debug('cursor placed to ', line.length);
 		}
 	}
+
+  private isPluginEnabled(editor: IEditor) {
+    let i = 0;
+    while (i < editor.lineCount()) {
+      const line = editor.getLine(i).trim();
+      i++;
+      if (line === '#enable-obsidian-task-placement-plugin') {
+        return true;
+      }
+    }
+
+    debug('Plugin is not enabled. Returning...');
+    return false;
+}
 }
