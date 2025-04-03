@@ -9,7 +9,10 @@ export function debug(...args: any[]) {
 }
 
 export interface IEditor {
+	getValue(): string;
+
 	getLine(line: number): string;
+
 	lineCount(): number;
 }
 
@@ -44,9 +47,9 @@ export function getEntry(editor: IEditor, initialI: number): { text: string; nex
 	{
 		let i = initialI;
 		const firstLine = editor.getLine(i);
-    if (isNestedTask(firstLine)) {
-      return getEntry(editor, initialI - 1);
-    }
+		if (isNestedTask(firstLine)) {
+			return getEntry(editor, initialI - 1);
+		}
 		if (!isTaskEntry(firstLine)) {
 			return { text: firstLine, nextLine: i + 1, previousLine: i - 1 };
 		}
@@ -81,38 +84,74 @@ export function getEntry(editor: IEditor, initialI: number): { text: string; nex
 }
 
 export function adjustTasksPositions(editor: IEditor) {
-	function append(buffer: string, entry: string) {
-		return buffer + (buffer.length > 0 ? '\n' : '') + entry;
-	}
-	let completeTasksBuffer = '';
-	let incompleteTasksBuffer = '';
-	{
-		let i = 0;
-		while (i < editor.lineCount()) {
-			const { text: entry, nextLine, previousLine } = getEntry(editor, i);
-			if (isRootTaskChecked(entry)) {
-				completeTasksBuffer = append(completeTasksBuffer, entry);
-				debug('checked entry', `'${entry}'`);
-				// } else if (isNewLineCheckboxUnchecked(entry)) {
-				// 	completeTasksBuffer = '\t' + entry + completeTasksBuffer;
-			} else if (isNewLineCheckboxUnchecked(entry)) {
-				debug('newLineCheckboxUnchecked entry', `'${entry}'`);
-				const { text: previousEntryText } = getEntry(editor, previousLine);
-				if (isRootTaskChecked(previousEntryText)) {
-					completeTasksBuffer = append(completeTasksBuffer, '  ' + entry);
-				} else {
-					incompleteTasksBuffer = append(incompleteTasksBuffer, entry);
-				}
-			} else {
-				debug('else entry', entry);
-				incompleteTasksBuffer = append(incompleteTasksBuffer, entry);
+	const originalContent = editor.getValue();
+	const lines = originalContent.split('\n');
+
+	const incompleteTasksBuffer: string[] = [];
+	const completeTasksBuffer: string[] = [];
+
+	let i = 0;
+	while (i < lines.length) {
+		const line = lines[i];
+		if (isRootTaskChecked(line)) {
+			const taskBlock = [line];
+			i++;
+			// Collect nested tasks
+			while (i < lines.length && isNestedTask(lines[i])) {
+				taskBlock.push(lines[i]);
+				i++;
 			}
-			i = Math.max(i + 1, nextLine);
+			completeTasksBuffer.push(...taskBlock);
+		} else if (isNewLineCheckboxUnchecked(line)) {
+			if (completeTasksBuffer.length > 0 && isRootTaskChecked(completeTasksBuffer[completeTasksBuffer.length - 1])) {
+				completeTasksBuffer.push('  ' + line);
+			} else {
+				incompleteTasksBuffer.push(line);
+			}
+			i++;
+		} else {
+			incompleteTasksBuffer.push(line);
+			i++;
 		}
 	}
-	debug('completeTasksBuffer', `'${completeTasksBuffer}'`);
-	debug('incompleteTasksBuffer', `'${incompleteTasksBuffer}'`);
-	return incompleteTasksBuffer + (incompleteTasksBuffer.length > 0 && completeTasksBuffer.length > 0 ? '\n' : '') + completeTasksBuffer;
+
+	const newContent = [...incompleteTasksBuffer, ...completeTasksBuffer].join('\n');
+	debug('newContent', newContent);
+	return newContent;
+}
+
+export function checkNestedTasks(editor: IEditor): string {
+	const lines = editor.getValue().split('\n');
+	let modified = false;
+
+	function getIndentationLevel(line: string): number {
+		const match = line.match(/^\s*/);
+		return match ? match[0].length : 0;
+	}
+
+	for (let i = 0; i < lines.length; i++) {
+		if (lines[i].includes('[x]')) {
+			// If any task (root or nested) is checked
+			const currentIndent = getIndentationLevel(lines[i]);
+			let j = i + 1;
+
+			// Check all nested tasks with greater indentation
+			while (j < lines.length) {
+				const nextIndent = getIndentationLevel(lines[j]);
+				if (nextIndent <= currentIndent) break; // Break if we're back to same or lower indentation
+
+				if (isNestedTask(lines[j]) && lines[j].includes('[ ]')) {
+					lines[j] = lines[j].replace('[ ]', '[x]');
+					modified = true;
+				}
+				j++;
+			}
+		}
+	}
+
+	const newContent = modified ? lines.join('\n') : editor.getValue();
+	debug('newContent', newContent);
+	return newContent;
 }
 
 export function getLastIncompleteTask(editor: IEditor) {
